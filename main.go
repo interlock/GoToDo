@@ -5,26 +5,43 @@ import (
     "net/http"
 )
 
+//A task to be completed on a ToDo List
 type Task struct {
-	Description string
 	id int
+	Description string
 	Due time.Time
-	Complete bool
+	Completed bool
 }
 
-type Tasks []Task
+//The data type holding all info for the application
+type ToDoApp struct {
+
+}
 
 func main() {
-	tasks := make(Tasks, 10)
+	todo := new(ToDoApp)
 
     server := &http.Server{
     	Addr : ":8080",
-    	Handler : tasks,
+    	Handler : todo,
     }
 
     server.ListenAndServe()
 }
 
-func (Tasks) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+/**
+	This function provides the framework for the http servers REST API.
+	It implements the Handler interface in go's http package
+*/
+func (todo *ToDoApp) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case "GET":
+		
+	case "PUT":
 
+	case "DELETE":
+
+	case "POST":
+
+	}
 }
