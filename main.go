@@ -3,13 +3,13 @@ package main
 import (
     "time"
     "net/http"
+    "fmt"
 )
 
 //A task to be completed on a ToDo List
 type Task struct {
 	id int
 	Description string
-	Due time.Time
 	Completed bool
 }
 
@@ -22,7 +22,7 @@ func main() {
 	todo := new(ToDoApp)
 
     server := &http.Server{
-    	Addr : ":8080",
+    	Addr : ":80",
     	Handler : todo,
     }
 
