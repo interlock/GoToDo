@@ -6,11 +6,11 @@ import (
 )
 
 func main() {
-	tasklist := make(tasks.TaskList, 0, 10) //start with a capacity of 10
+	tasklist := tasks.NewTaskList()
 
     server := &http.Server{
     	Addr : ":80",
-    	Handler : &tasklist,
+    	Handler : tasklist,
     }
 
     server.ListenAndServe()

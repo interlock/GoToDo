@@ -16,20 +16,24 @@ var taskIdExp = regexp.MustCompile("^/tasks/[0-9]+$")
 
 //A task to be completed on a ToDo List
 type Task struct {
-	id int
-	name string
-	desc string
-	completed bool
+	Id int
+	Name string
+	Desc string
+	Completed bool
 }
 
 type TaskList []Task
 
+func NewTaskList() *TaskList {
+	tasklist := make(TaskList, 0, 15) //make tasklist of arbitrary size
+	return &tasklist
+}
+
 var ErrIDNotFound = errors.New("The id you are looking for doesn't exist in this task list")
 
-//when refactoring into own module consider adding errors
-func (tasklist TaskList) FindById(id int) (Task, error) {
-	for _, task := range tasklist {
-		if task.id == id {
+func (tl *TaskList) FindById(id int) (Task, error) {
+	for _, task := range *tl {
+		if task.Id == id {
 			return task, nil
 		}
 	}
@@ -37,64 +41,106 @@ func (tasklist TaskList) FindById(id int) (Task, error) {
 	return Task{}, ErrIDNotFound
 }
 
+func (tl *TaskList) RemoveById(id int) error {
+	for i, task := range *tl {
+		if task.Id == id {
+			*tl = append((*tl)[:i], (*tl)[i + 1:]...)
+			return nil
+		}
+	}
+
+	return ErrIDNotFound
+}
+
+func (tl *TaskList) AddTask(task Task) {
+	task.Id = nextID //make sure ids don't conflict
+	nextID++
+
+	*tl = append(*tl, task)
+}
 
 /**
 	This function provides the framework for the http servers REST API.
 	It implements the Handler interface in go's http package
 */
 func (tasklist *TaskList) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	//Retrieve
-	case "GET":
-		//view the simple front end
-		if r.URL.Path == "/" {
-			for i, task := range *tasklist {
-				w.Write([]byte(fmt.Sprintf("%d. %s\n", i, task.desc)))
+	path := r.URL.Path
+	switch {
+		case path == "/":
+			//only needs GET
+			if r.Method == "GET" {
+				for i, task := range *tasklist {
+					w.Write([]byte(fmt.Sprintf("%d. %s\n", i + 1, task.Desc)))
+				}
 			}
-		} else if r.URL.Path == "/tasks" {
-			//convert the data tasklist into byte slice encoded in json
-			jsonTasks, err := json.Marshal(tasklist)
-			if err == nil {
-				w.Write(jsonTasks)
-			} else {
-				//if it fails return an error
-				w.Write([]byte("404 server error"))
-			}
-		} else {
-			//check if a specific id is being retrieved
-			var id int
-
-			if taskIdExp.MatchString(r.URL.Path) {
-				fmt.Sscanf(r.URL.Path, "/tasks/%d", &id)
-				task, err := tasklist.FindById(id)
+		case path == "/tasks":
+			if r.Method == "GET" {
+				jsonTasks, err := json.Marshal(tasklist)
 				if err == nil {
-					jsonTask, _ := json.MarshalIndent(task, "", "    ")
+					w.Write(jsonTasks)
+				} else {
+					//if it fails return an error
+					w.Write([]byte(err.Error()))
+				}
+			} else if r.Method == "POST" {
+				task := Task{}
+				dec := json.NewDecoder(r.Body)
+				err := dec.Decode(&task)
+
+				if err == nil {
+					task.Id = nextID
+					nextID++
+					*tasklist = append(*tasklist, task)
+					encoder := json.NewEncoder(w)
+					encoder.Encode(&task)
+				}
+			}
+		//is the request about a specific task
+		case taskIdExp.MatchString(path):
+			var id int
+			fmt.Sscanf(path, "/tasks/%d", &id)
+
+			if r.Method == "GET" {
+			task, err := tasklist.FindById(id)
+				if err == nil {
+					jsonTask, _ := json.MarshalIndent(&task, "", "    ")
 					w.Write([]byte(jsonTask))
 				} else {
 					w.Write([]byte(err.Error()))
 				}
-			}
-		}
-	//Edit
-	case "PUT":
+			} else if r.Method == "PUT" {
 
-	//Remove
-	case "DELETE":
+			} else if r.Method == "DELETE" {
 
-	//Create
-	case "POST":
-		if r.URL.Path == "/tasks" {
-			task := Task{}
-			dec := json.NewDecoder(r.Body)
-			err := dec.Decode(&task)
-			fmt.Println(task)
-			if err == nil {
-				task.id = nextID
-				nextID++
-				*tasklist = append(*tasklist, task)
-				encoder := json.NewEncoder(w)
-				encoder.Encode(task)
 			}
-		}
 	}
+	// switch r.Method {
+	// //Retrieve
+	// case "GET":
+	// 	//view the simple front end
+	//
+	// 	} else {
+	// 		//check if a specific id is being retrieved
+	// 		var id int
+
+	// 		if taskIdExp.MatchString(r.URL.Path) {
+	// 			fmt.Sscanf(r.URL.Path, "/tasks/%d", &id)
+	// 			task, err := tasklist.FindById(id)
+	// 			if err == nil {
+	// 				jsonTask, _ := json.MarshalIndent(task, "", "    ")
+	// 				w.Write([]byte(jsonTask))
+	// 			} else {
+	// 				w.Write([]byte(err.Error()))
+	// 			}
+	// 		}
+	// 	}
+	// //Edit
+	// case "PUT":
+
+	// //Remove
+	// case "DELETE":
+
+	// //Create
+	//
+	// }
 }
