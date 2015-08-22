@@ -60,7 +60,6 @@ func (tl *TaskList) AddTask(task *Task) {
 }
 
 
-
 /**
 	This function provides the framework for the http servers REST API.
 	It implements the Handler interface in go's http package
