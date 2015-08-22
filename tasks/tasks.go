@@ -52,11 +52,11 @@ func (tl *TaskList) RemoveById(id int) error {
 	return ErrIDNotFound
 }
 
-func (tl *TaskList) AddTask(task Task) {
+func (tl *TaskList) AddTask(task *Task) {
 	task.Id = nextID //make sure ids don't conflict
 	nextID++
 
-	*tl = append(*tl, task)
+	*tl = append(*tl, *task)
 }
 
 
@@ -85,9 +85,9 @@ func (tasklist *TaskList) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					w.Write([]byte(err.Error()))
 				}
 			} else if r.Method == "POST" {
-				task := Task{}
+				task := &Task{}
 				dec := json.NewDecoder(r.Body)
-				err := dec.Decode(&task)
+				err := dec.Decode(task)
 
 				if err == nil {
 					tasklist.AddTask(task)
